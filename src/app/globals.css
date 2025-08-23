@@ -1,4 +1,4 @@
-@import "../../supa-starter/node_modules/tailwindcss/dist/lib.d.mts";
+@import "../../node_modules/tailwindcss/dist/lib.d.mts";
 
 :root {
   --background: #ffffff;
