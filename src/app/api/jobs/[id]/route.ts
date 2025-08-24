@@ -1,39 +1,51 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(
-    _: Request,
-    { params }: { params: { id: string } }
-) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+    const { id } = await context.params;
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("jobs")
         .select("*, profiles(full_name)")
-        .eq("id", params.id)
+        .eq("id", id)
         .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 404 });
     return NextResponse.json(data);
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
     const supabase = await createClient();
     const body = await req.json();
 
-    const { data, error } = await supabase
-        .from("jobs")
-        .update(body)
-        .eq("id", params.id)
-        .select();
+    const { id } = await context.params; // <-- harus di-await
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data[0]);
+    const { error } = await supabase
+        .from("jobs")
+        .update({
+            title: body.title,
+            location: body.location,
+            job_type: body.job_type || null,
+            description: body.description,
+        })
+        .eq("id", id);
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
     const supabase = await createClient();
-    const { error } = await supabase.from("jobs").delete().eq("id", params.id);
+    const { id } = await context.params;
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error } = await supabase.from("jobs").delete().eq("id", id);
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
 }

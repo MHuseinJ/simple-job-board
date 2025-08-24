@@ -4,6 +4,7 @@ export type Job = {
     profiles: Profile;
     location: string;
     description: string;
+    job_type: string;
 }
 
 export type Profile = {

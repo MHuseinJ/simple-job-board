@@ -3,20 +3,31 @@ import {createClient} from "@/lib/supabase/server";
 
 export async function GET(req: Request) {
     const supabase = await createClient();
-    const { searchParams } = new URL(req.url);
+    const {searchParams} = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+    const location = searchParams.get("location");
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data, error } = await supabase
+    // fetch jobs with pagination
+    const {data, error, count} = await supabase
         .from("jobs")
-        .select("id, title, location, job_type, profiles(full_name)")
+        .select("id, title, location, job_type, description, profiles(full_name)", {count: "exact"})
         .range(from, to)
-        .order("created_at", { ascending: false });
+        .order("created_at", {ascending: false})
+        .match(location ? {location} : {});
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    if (error) {
+        return NextResponse.json({error: error.message}, {status: 500});
+    }
+
+    const totalPages = Math.ceil((count || 0) / limit);
+
+    return NextResponse.json({
+        jobs: data || [],
+        totalPages,
+    });
 }
 
 export async function POST(req: Request) {
