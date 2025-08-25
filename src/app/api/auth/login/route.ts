@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ok, fail } from "@/lib/http";
 
 export async function POST(req: Request) {
     const { email } = await req.json();

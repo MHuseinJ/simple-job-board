@@ -26,7 +26,6 @@ export default function JobListPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [jobType, setJobType] = useState<string>("All"); // 👈 filter state
-    const router = useRouter();
 
     useEffect(() => {
         const controller = new AbortController();
@@ -47,8 +46,12 @@ export default function JobListPage() {
                 // If your API returns just an array, setJobs(json); setTotalPages(???)
                 setJobs(json.jobs ?? []);
                 setTotalPages(json.totalPages ?? 1);
-            } catch (e) {
-                if ((e as any).name !== "AbortError") console.error(e);
+            } catch (e: unknown) {
+                if (e instanceof DOMException && e.name === "AbortError") {
+                    // ignore fetch abort
+                } else {
+                    console.error(e);
+                }
             } finally {
                 setLoading(false);
             }

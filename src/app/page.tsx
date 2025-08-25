@@ -19,14 +19,12 @@ type Job = {
 const jobTypes = ["All", "Full-Time", "Part-Time", "Contract"]; // 👈 includes All
 
 export default function JobListPage() {
-  const {user} = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [jobType, setJobType] = useState<string>("All"); // 👈 filter state
-  const router = useRouter();
 
   useEffect(() => {
     const controller = new AbortController();
