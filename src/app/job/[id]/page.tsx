@@ -20,8 +20,12 @@ export default function JobDetailPage() {
                 const res = await fetch(`/api/jobs/${id}`);
                 const data = await res.json();
                 setJob(data);
-            } catch (err) {
-                console.error("Failed to load job", err);
+            } catch (err: unknown) {
+                if (err instanceof DOMException && err.name === "AbortError") {
+                    // ignore fetch abort
+                } else {
+                    console.error("Failed to load job", err);
+                }
             } finally {
                 setLoading(false);
             }
