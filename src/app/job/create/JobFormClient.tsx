@@ -12,7 +12,7 @@ type Initial = Record<string, string | undefined>;
 export default function JobFormClient({ initial }: { initial: Initial }) {
     const router = useRouter();
 
-    const [open, _] = useState(true);
+    const [open] = useState(true);
     const [loading, setLoading] = useState(false);
 
     const [job, setJob] = useState<{

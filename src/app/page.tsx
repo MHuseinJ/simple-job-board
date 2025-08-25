@@ -3,8 +3,6 @@
 import { useEffect, useState, Fragment } from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 
 type Job = {
   id: string;
@@ -57,12 +55,6 @@ export default function JobListPage() {
     load();
     return () => controller.abort();
   }, [page, search, jobType]);
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this job?")) return;
-    await fetch(`/api/jobs/${id}`, { method: "DELETE" });
-    setJobs((prev) => prev.filter((j) => j.id !== id));
-  };
 
   const companyOf = (job: Job) =>
       job.company_name ?? job.profiles?.company_name ?? "Unknown";
