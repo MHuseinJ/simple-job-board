@@ -57,9 +57,10 @@ export async function POST(req: Request) {
     if (!profile) return fail("profile not found", 404, { code: "404", details: "profile not found" });
 
     // Insert job
+    const {company, ...restBody} = body;
     const { data, error } = await supabase
         .from("jobs")
-        .insert([{ ...body, company_id: profile.id }])
+        .insert([{ ...restBody, company_id: profile.id }])
         .select();
 
     if (error) return fail("Failed to create jobs", 400, { code: error.code, details: error.message });

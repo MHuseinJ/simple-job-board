@@ -5,7 +5,7 @@ import { Dialog, Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 
-const jobTypes = ["Full-time", "Part-time", "Contract"];
+const jobTypes = ["Full-Time", "Part-Time", "Contract"];
 
 type Initial = Record<string, string | undefined>;
 
@@ -72,17 +72,6 @@ export default function JobFormClient({ initial }: { initial: Initial }) {
                             <input
                                 name="title"
                                 value={job.title}
-                                onChange={handleChange}
-                                required
-                                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium">Company</label>
-                            <input
-                                name="company"
-                                value={job.company}
                                 onChange={handleChange}
                                 required
                                 className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
