@@ -5,8 +5,8 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
     const { id } = await context.params;
     const supabase = await createClient();
     const { data, error } = await supabase
-        .from("jobs")
-        .select("*, profiles(full_name)")
+        .from("job_company")
+        .select("*")
         .eq("id", id)
         .single();
 

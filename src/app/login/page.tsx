@@ -1,70 +1,139 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { Tab } from "@headlessui/react";
+import { useAuth } from "@/contexts/AuthContext";
+import { redirect } from "next/navigation";
 
-export default function LoginPage() {
-    const supabase = createClient();
-    const [email, setEmail] = useState("");
-    const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-    const [error, setError] = useState<string | null>(null);
+function cx(...classes: string[]) {
+    return classes.filter(Boolean).join(" ");
+}
 
-    async function onSendLink(e: React.FormEvent) {
+export default function LoginRegisterPage() {
+    const { user } = useAuth();
+    if (user) redirect("/dashboard");
+
+    // Register form state
+    const [regCompany, setRegCompany] = useState("");
+    const [regEmail, setRegEmail] = useState("");
+    const [regMsg, setRegMsg] = useState<string | null>(null);
+    const [regLoading, setRegLoading] = useState(false);
+
+    // Login form state
+    const [logEmail, setLogEmail] = useState("");
+    const [logMsg, setLogMsg] = useState<string | null>(null);
+    const [logLoading, setLogLoading] = useState(false);
+
+    async function onRegister(e: React.FormEvent) {
         e.preventDefault();
-        setStatus("sending");
-        setError(null);
-
-        const { error } = await supabase.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: `${location.origin}/auth/callback?next=/dashboard` },
+        setRegLoading(true);
+        setRegMsg(null);
+        const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ company: regCompany, email: regEmail }),
         });
-
-        if (error) {
-            setError(error.message);
-            setStatus("error");
-        } else {
-            setStatus("sent");
-        }
+        const data = await res.json();
+        setRegLoading(false);
+        setRegMsg(res.ok ? data.message : data.error || "Failed to register");
     }
 
-    async function oauth(provider: "github" | "google") {
-        await supabase.auth.signInWithOAuth({
-            provider,
-            options: { redirectTo: `${location.origin}/auth/callback?next=/dashboard` },
+    async function onLogin(e: React.FormEvent) {
+        e.preventDefault();
+        setLogLoading(true);
+        setLogMsg(null);
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: logEmail }),
         });
+        const data = await res.json();
+        setLogLoading(false);
+        setLogMsg(res.ok ? data.message : data.error || "Failed to login");
     }
 
     return (
-        <main className="space-y-6">
-            <h1 className="text-2xl font-semibold">Sign in</h1>
+        <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">Welcome</h1>
 
-            <form onSubmit={onSendLink} className="space-y-3">
-                <input
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-md border px-3 py-2"
-                />
-                <button
-                    disabled={status === "sending"}
-                    className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-60"
-                >
-                    {status === "sending" ? "Sending..." : "Send magic link"}
-                </button>
+                <Tab.Group>
+                    <Tab.List className="flex space-x-1 rounded-xl bg-gray-100 p-1 mb-6">
+                        {["Login", "Register"].map((t) => (
+                            <Tab
+                                key={t}
+                                className={({ selected }) =>
+                                    cx(
+                                        "w-full rounded-lg py-2.5 text-sm font-medium leading-5",
+                                        selected ? "bg-white shadow text-indigo-700" : "text-gray-600 hover:bg-white/70"
+                                    )
+                                }
+                            >
+                                {t}
+                            </Tab>
+                        ))}
+                    </Tab.List>
+                    <Tab.Panels>
+                        {/* LOGIN */}
+                        <Tab.Panel>
+                            <form onSubmit={onLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Company Email</label>
+                                    <input
+                                        value={logEmail}
+                                        onChange={(e) => setLogEmail(e.target.value)}
+                                        required
+                                        placeholder="team@acme.inc"
+                                        className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={logLoading}
+                                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    {logLoading ? "Sending link..." : "Send magic link"}
+                                </button>
+                                {logMsg && <p className="text-sm text-center mt-2">{logMsg}</p>}
+                            </form>
+                        </Tab.Panel>
 
-                {status === "sent" && <p>Check your email for the login link.</p>}
-                {status === "error" && <p className="text-red-600">{error}</p>}
-            </form>
-
-            <div className="space-x-3">
-                <button onClick={() => oauth("github")} className="rounded-md border px-3 py-2">
-                    Continue with GitHub
-                </button>
-                <button onClick={() => oauth("google")} className="rounded-md border px-3 py-2">
-                    Continue with Google
-                </button>
+                        {/* REGISTER */}
+                        <Tab.Panel>
+                            <form onSubmit={onRegister} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Company Name</label>
+                                    <input
+                                        value={regCompany}
+                                        onChange={(e) => setRegCompany(e.target.value)}
+                                        required
+                                        placeholder="Acme Inc"
+                                        className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium">Company Email</label>
+                                    <input
+                                        type="email"
+                                        value={regEmail}
+                                        onChange={(e) => setRegEmail(e.target.value)}
+                                        required
+                                        placeholder="team@acme.com"
+                                        className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={regLoading}
+                                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    {regLoading ? "Sending link..." : "Register via magic link"}
+                                </button>
+                                {regMsg && <p className="text-sm text-center mt-2">{regMsg}</p>}
+                            </form>
+                        </Tab.Panel>
+                    </Tab.Panels>
+                </Tab.Group>
             </div>
         </main>
     );

@@ -1,103 +1,177 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState, Fragment } from "react";
+import { Listbox, Transition } from "@headlessui/react";
+import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+
+type Job = {
+  id: string;
+  title: string;
+  location: string;
+  job_type: string;
+  description: string;
+  company_name?: string; // if using job_company view
+  profiles?: { company_name?: string }; // if still using join
+};
+
+const jobTypes = ["All", "Full-Time", "Part-Time", "Contract"]; // 👈 includes All
+
+export default function JobListPage() {
+  const {user} = useAuth();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [jobType, setJobType] = useState<string>("All"); // 👈 filter state
+  const router = useRouter();
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: "10",
+          search,
+          job_type: jobType, // 👈 pass to API
+        });
+        const res = await fetch(`/api/jobs?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        // If your API returns just an array, setJobs(json); setTotalPages(???)
+        setJobs(json.jobs ?? []);
+        setTotalPages(json.totalPages ?? 1);
+      } catch (e) {
+        if ((e as any).name !== "AbortError") console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+    return () => controller.abort();
+  }, [page, search, jobType]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this job?")) return;
+    await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+    setJobs((prev) => prev.filter((j) => j.id !== id));
+  };
+
+  const companyOf = (job: Job) =>
+      job.company_name ?? job.profiles?.company_name ?? "Unknown";
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+      <main className="p-6 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Jobs</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Controls row */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          {/* Search */}
+          <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search Jobs Location"
+              className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2 focus:ring focus:ring-indigo-200"
+          />
+
+          {/* Job Type Filter (Headless UI) */}
+          <div className="w-full sm:w-56">
+            <Listbox value={jobType} onChange={(v) => { setJobType(v); setPage(1); }}>
+              <div className="relative">
+                <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm">
+                  <span className="block truncate">{jobType}</span>
+                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+                </span>
+                </Listbox.Button>
+                <Transition as={Fragment} leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+                  <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    {jobTypes.map((t) => (
+                        <Listbox.Option
+                            key={t}
+                            value={t}
+                            className={({ active }) =>
+                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                    active ? "bg-indigo-600 text-white" : "text-gray-900"
+                                }`
+                            }
+                        >
+                          {({ selected }) => (
+                              <>
+                          <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
+                            {t}
+                          </span>
+                                {selected ? (
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
+                              <CheckIcon className="h-5 w-5" />
+                            </span>
+                                ) : null}
+                              </>
+                          )}
+                        </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </Transition>
+              </div>
+            </Listbox>
+          </div>
+        </div>
+
+        {/* List */}
+        {loading ? (
+            <ul className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                  <li key={i} className="border rounded p-4 animate-pulse">
+                    <div className="h-4 w-40 bg-gray-200 rounded mb-2" />
+                    <div className="h-3 w-24 bg-gray-100 rounded" />
+                  </li>
+              ))}
+            </ul>
+        ) : jobs.length === 0 ? (
+            <p className="text-gray-500">No jobs found.</p>
+        ) : (
+            <ul className="space-y-3">
+              {jobs.map((job) => (
+                  <li key={job.id} className="border rounded p-4 flex justify-between items-center">
+                    <div>
+                      <a href={`/job/${job.id}`} className="text-indigo-600 font-semibold hover:underline">
+                        {job.title}
+                      </a>
+                      <p className="text-sm text-gray-600">
+                        {companyOf(job)} — {job.location} · <span className="font-medium">{job.job_type}</span>
+                      </p>
+                    </div>
+                  </li>
+              ))}
+            </ul>
+        )}
+
+        {/* Pagination */}
+        <div className="flex justify-center gap-2 mt-6">
+          <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="px-3 py-1 rounded border disabled:opacity-50"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Prev
+          </button>
+          <span className="px-2 py-1">{page} / {totalPages}</span>
+          <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1 rounded border disabled:opacity-50"
           >
-            Read our docs
-          </a>
+            Next
+          </button>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
   );
 }

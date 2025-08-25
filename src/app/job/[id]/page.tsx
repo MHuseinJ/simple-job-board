@@ -4,9 +4,11 @@ import { useEffect, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Dialog, Transition } from "@headlessui/react";
 import { Job } from "@/lib/model/data"
+import {useAuth} from "@/contexts/AuthContext";
 
 
 export default function JobDetailPage() {
+    const {user} = useAuth();
     const { id } = useParams();
     const router = useRouter();
     const [job, setJob] = useState<Job | null>(null);
@@ -80,7 +82,7 @@ export default function JobDetailPage() {
                                 <div className="mt-3">
                                     <p className="text-sm text-gray-700">
                                         <span className="font-medium">Company:</span>{" "}
-                                        {job.profiles?.full_name || "-"}
+                                        {job.company_name}
                                     </p>
                                     <p className="text-sm text-gray-700">
                                         <span className="font-medium">Location:</span>{" "}
@@ -95,12 +97,12 @@ export default function JobDetailPage() {
                                     </div>
                                 </div>
                                 <div className="mt-6 flex justify-end gap-3">
-                                    <button
+                                    {user ? (<button
                                         onClick={() =>
                                             router.push(
                                                 `/job/create?id=${job.id}&title=${encodeURIComponent(
                                                     job.title
-                                                )}&company=${encodeURIComponent(job.profiles.full_name)}&location=${encodeURIComponent(
+                                                )}&company=${encodeURIComponent(job.company_name)}&location=${encodeURIComponent(
                                                     job.location
                                                 )}&description=${encodeURIComponent(job.description)}&type=${encodeURIComponent(job.job_type)}`
                                             )
@@ -108,9 +110,9 @@ export default function JobDetailPage() {
                                         className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
                                     >
                                         Edit
-                                    </button>
+                                    </button>) : null }
                                     <button
-                                        onClick={() => router.push("/job")}
+                                        onClick={() => router.back()}
                                         className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                     >
                                         Close

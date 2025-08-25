@@ -1,35 +1,44 @@
 import { NextResponse } from "next/server";
 import {createClient} from "@/lib/supabase/server";
+import { ok, fail } from "@/lib/http";
 
 export async function GET(req: Request) {
     const supabase = await createClient();
-    const {searchParams} = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const location = searchParams.get("location");
+    const url = new URL(req.url);
+
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10)));
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    // fetch jobs with pagination
-    const {data, error, count} = await supabase
-        .from("jobs")
-        .select("id, title, location, job_type, description, profiles(full_name)", {count: "exact"})
-        .range(from, to)
-        .order("created_at", {ascending: false})
-        .match(location ? {location} : {});
+    const search = url.searchParams.get("search")?.trim();
+    const jobType = url.searchParams.get("job_type")?.trim();
+    const idCompany = url.searchParams.get("id_company")?.trim();// 👈 NEW
 
-    if (error) {
-        return NextResponse.json({error: error.message}, {status: 500});
-    }
+    // If you’re using the view:
+    let query = supabase
+        .from("jobs") // or "jobs" with profiles join if you prefer
+        .select("*, profiles(company_name)", {count: "exact"})
+        .order("id", {ascending: false})
+        .range(from, to);
 
-    const totalPages = Math.ceil((count || 0) / limit);
+    if (search) query = query.ilike("location", `%${search}%`);
+    if (jobType && jobType !== "All") query = query.eq("job_type", jobType);
+    if (idCompany) query = query.eq("company_id", idCompany);
 
-    return NextResponse.json({
-        jobs: data || [],
-        totalPages,
-    });
+    const {data, error, count} = await query;
+    if (data) {
+        const mapped = data.map(({profiles, ...rest}) => ({
+            ...rest,
+            company_name: profiles?.company_name ?? null
+        }));
+        const totalPages = Math.ceil((count ?? 0) / limit);
+        return NextResponse.json({jobs: mapped ?? [], totalPages});
+    } else  if (error) return NextResponse.json({error: error.message}, {status: 500});
+    else return NextResponse.json({error: "data null"}, {status: 500});
+
+
 }
-
 export async function POST(req: Request) {
     const supabase = await createClient();
     const body = await req.json();
@@ -45,7 +54,7 @@ export async function POST(req: Request) {
         .eq("id", user.id)
         .single();
 
-    if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    if (!profile) return fail("profile not found", 404, { code: "404", details: "profile not found" });
 
     // Insert job
     const { data, error } = await supabase
@@ -53,7 +62,7 @@ export async function POST(req: Request) {
         .insert([{ ...body, company_id: profile.id }])
         .select();
 
-    if (error) return NextResponse.json({ error }, { status: 400 });
+    if (error) return fail("Failed to create jobs", 400, { code: error.code, details: error.message });
 
-    return NextResponse.json(data);
+    return ok(data);
 }

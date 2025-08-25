@@ -5,9 +5,10 @@ export type Job = {
     location: string;
     description: string;
     job_type: string;
+    company_name: string;
 }
 
 export type Profile = {
     username: string;
-    full_name: string;
+    company_name: string;
 }

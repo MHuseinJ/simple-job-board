@@ -19,7 +19,7 @@ export async function GET() {
     // Ambil profile user dari table profiles
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, full_name, username")
+        .select("id, company_name, username")
         .eq("id", user.id)
         .single();
 

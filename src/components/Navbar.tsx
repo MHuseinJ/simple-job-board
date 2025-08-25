@@ -4,16 +4,11 @@ import { Fragment, useEffect, useState } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import {useAuth} from "@/contexts/AuthContext";
 
-interface Profile {
-    id: string;
-    full_name: string;
-    email: string;
-}
-
-const navigation = [
-    { name: "Jobs", href: "/job" },
-    { name: "Create Job", href: "/job/create" },
+const baseNavigation = [
+    { name: "My Jobs", href: "/job", requireAuth: true  },
+    { name: "Create Job", href: "/job/create", requireAuth: true }, // mark as protected
 ];
 
 function classNames(...classes: string[]) {
@@ -21,32 +16,17 @@ function classNames(...classes: string[]) {
 }
 
 export default function Navbar() {
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { user, loading } = useAuth();
     const router = useRouter();
 
-    useEffect(() => {
-        async function fetchProfile() {
-            try {
-                const res = await fetch("/auth/me");
-                if (res.ok) {
-                    const data = await res.json();
-                    setProfile(data.user);
-                }
-            } catch (err) {
-                console.error("Failed to fetch profile", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchProfile();
-    }, []);
-
     const handleLogout = async () => {
-        await fetch("/auth/signout", { method: "POST" });
-        setProfile(null);
+        await fetch("/api/auth/signout", { method: "POST" });
         router.refresh();
     };
+
+    const navigation = baseNavigation.filter(
+        (item) => !item.requireAuth || user
+    );
 
     return (
         <Disclosure as="nav" className="bg-indigo-600">
@@ -57,7 +37,7 @@ export default function Navbar() {
                             {/* Logo + Navigation */}
                             <div className="flex items-center">
                                 <div
-                                    onClick={() => router.push("/job")}
+                                    onClick={() => router.push("/dashboard")}
                                     className="text-white font-bold text-lg cursor-pointer"
                                 >
                                     Job Portal
@@ -79,13 +59,13 @@ export default function Navbar() {
                             <div className="flex items-center">
                                 {loading ? (
                                     <span className="text-sm text-white">Loading...</span>
-                                ) : profile ? (
+                                ) : user ? (
                                     <Menu as="div" className="relative ml-3">
                                         <div>
                                             <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none">
                                                 <span className="sr-only">Open user menu</span>
                                                 <div className="h-8 w-8 flex items-center justify-center rounded-full bg-indigo-200 font-semibold text-indigo-700">
-                                                    {profile.full_name.charAt(0).toUpperCase()}
+                                                    {user.company_name.charAt(0).toUpperCase()}
                                                 </div>
                                             </Menu.Button>
                                         </div>
@@ -108,7 +88,7 @@ export default function Navbar() {
                                                                     "block px-4 py-2 text-sm text-gray-700"
                                                                 )}
                                                             >
-                                {profile.full_name}
+                                {user.company_name}
                               </span>
                                                         )}
                                                     </Menu.Item>
