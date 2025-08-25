@@ -28,7 +28,7 @@ export default function LoginRegisterPage() {
         e.preventDefault();
         setRegLoading(true);
         setRegMsg(null);
-        const res = await fetch("/api/auth/register", {
+        const res = await fetch("/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ company: regCompany, email: regEmail }),
@@ -42,7 +42,7 @@ export default function LoginRegisterPage() {
         e.preventDefault();
         setLogLoading(true);
         setLogMsg(null);
-        const res = await fetch("/api/auth/login", {
+        const res = await fetch("/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: logEmail }),

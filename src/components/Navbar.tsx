@@ -20,7 +20,7 @@ export default function Navbar() {
     const router = useRouter();
 
     const handleLogout = async () => {
-        await fetch("/api/auth/signout", { method: "POST" });
+        await fetch("/auth/signout", { method: "POST" });
         router.refresh();
     };
 

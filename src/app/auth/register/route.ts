@@ -14,7 +14,7 @@ export async function POST(req: Request) {
         email,
         options: {
             data: {company_name: company},
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?next=/`,
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/`,
         },
     });
 
