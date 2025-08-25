@@ -10,13 +10,12 @@ export async function POST(req: Request) {
 
     const supabase =  await createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
             data: {company_name: company},
             emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?next=/`,
         },
-        password: ""
     });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
