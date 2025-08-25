@@ -2,15 +2,28 @@ import { NextResponse } from "next/server";
 
 export type ApiError = {
     error: string;      // human-readable
-    code?: string;      // machine-readable (optional)
-    details?: unknown;  // extra info (optional)
+    code?: string;      // optional machine code
+    details?: unknown;  // optional extra info
 };
 
-export function ok<T>(data: T, init?: number | ResponseInit) {
-    return NextResponse.json(data, init);
+function toInit(init?: number | ResponseInit): ResponseInit | undefined {
+    if (typeof init === "number") return { status: init };
+    return init;
 }
 
-export function fail(message: string, init?: number | ResponseInit, extra?: Omit<ApiError, "error">) {
-    const status = typeof init === "number" ? init : (init as ResponseInit | undefined)?.status ?? 400;
-    return NextResponse.json<ApiError>({ error: message, ...extra }, { status, ...(typeof init === "object" ? init : {}) });
+export function ok<T>(data: T, init?: number | ResponseInit) {
+    return NextResponse.json<T>(data, toInit(init));
+}
+
+export function fail(
+    message: string,
+    init?: number | ResponseInit,
+    extra?: Omit<ApiError, "error">
+) {
+    const base = toInit(init) ?? {};
+    const status = base.status ?? 400;
+    return NextResponse.json<ApiError>(
+        { error: message, ...(extra ?? {}) },
+        { ...base, status }
+    );
 }
