@@ -37,7 +37,7 @@ export default function Navbar() {
                             {/* Logo + Navigation */}
                             <div className="flex items-center">
                                 <div
-                                    onClick={() => router.push("/dashboard")}
+                                    onClick={() => router.push("/")}
                                     className="text-white font-bold text-lg cursor-pointer"
                                 >
                                     Job Portal

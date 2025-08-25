@@ -36,7 +36,7 @@ A minimal boilerplate using **Next.js App Router**, **Supabase (DB + Auth)**, an
 ## Features
 
 - Email magic link + optional OAuth (GitHub/Google)
-- Protected route example (`/dashboard`)
+- Protected route example (`/job`)
 - `profiles` table with RLS and auto-create trigger
 - Minimal, accessible UI
 

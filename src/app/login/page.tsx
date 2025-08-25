@@ -11,7 +11,7 @@ function cx(...classes: string[]) {
 
 export default function LoginRegisterPage() {
     const { user } = useAuth();
-    if (user) redirect("/dashboard");
+    if (user) redirect("/");
 
     // Register form state
     const [regCompany, setRegCompany] = useState("");
