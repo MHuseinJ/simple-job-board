@@ -65,7 +65,7 @@ export default function Navbar() {
                                             <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none">
                                                 <span className="sr-only">Open user menu</span>
                                                 <div className="h-8 w-8 flex items-center justify-center rounded-full bg-indigo-200 font-semibold text-indigo-700">
-                                                    {user.company_name.charAt(0).toUpperCase()}
+                                                    {user.avatarInitial}
                                                 </div>
                                             </Menu.Button>
                                         </div>

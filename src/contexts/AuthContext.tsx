@@ -1,45 +1,71 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-interface Profile {
+export type RawProfile = {
     id: string;
-    full_name?: string;
-    company_name?: string;
     email: string;
-}
+    company_name?: string | null;
+    full_name?: string | null;
+};
 
-interface AuthContextValue {
-    user: Profile | null;
+export type UiUser = RawProfile & {
+    displayName: string;
+    avatarInitial: string; // single uppercase letter
+};
+
+type AuthContextValue = {
+    user: UiUser | null;
     loading: boolean;
-}
+    refresh: () => Promise<void>;
+};
 
 const AuthContext = createContext<AuthContextValue>({
     user: null,
     loading: true,
+    refresh: async () => {},
 });
 
+function toUiUser(p: RawProfile | null): UiUser | null {
+    if (!p) return null;
+    const displayName = (p.company_name || p.full_name || p.email || "").trim();
+    const first = displayName ? displayName.charAt(0).toUpperCase() : "?";
+    return {
+        ...p,
+        displayName,
+        avatarInitial: first,
+    };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<Profile | null>(null);
+    const [raw, setRaw] = useState<RawProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function fetchUser() {
-            try {
-                const res = await fetch("/api/auth/me");
-                if (res.ok) {
-                    const data = await res.json();
-                    setUser(data.user);
-                }
-            } finally {
-                setLoading(false);
+    const user = useMemo(() => toUiUser(raw), [raw]);
+
+    async function fetchMe() {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/auth/me", { cache: "no-store" });
+            if (!res.ok) {
+                setRaw(null);
+                return;
             }
+            const data = (await res.json()) as { user: RawProfile | null };
+            setRaw(data.user ?? null);
+        } catch {
+            setRaw(null);
+        } finally {
+            setLoading(false);
         }
-        fetchUser();
+    }
+
+    useEffect(() => {
+        fetchMe();
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, loading }}>
+        <AuthContext.Provider value={{ user, loading, refresh: fetchMe }}>
             {children}
         </AuthContext.Provider>
     );
