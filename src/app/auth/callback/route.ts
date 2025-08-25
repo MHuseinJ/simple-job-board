@@ -5,7 +5,7 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const supabase = await createClient();
     const code = searchParams.get("code");
-    const next = searchParams.get("next") ?? "/job";
+    const next = searchParams.get("next") ?? "/";
 
     if (code) {
         // will set the session cookie

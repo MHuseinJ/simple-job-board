@@ -17,14 +17,12 @@ export async function POST(req: Request) {
         .single();
 
     if (profileErr || !profile) {
-        console.log(profileErr);
         return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
-    console.log(`${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/job`)
     const { error } = await supabase.auth.signInWithOtp({
         email: profile.username,
         options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/job`,
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/`,
         },
     });
 
